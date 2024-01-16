@@ -13,6 +13,7 @@ const SizeQuery = require("./size/SizeQuery");
 const DownloadQueryList = require("./download/DownloadQueryList");
 const Format = require("./types/Format");
 const DoneAction = require("./DoneAction");
+const util = require("util");
 
 class QueryManager {
     constructor(window, environment) {
@@ -63,6 +64,7 @@ class QueryManager {
 
     managePlaylist(initialQuery, url) {
         this.playlistMetadata = this.playlistMetadata.concat(Utils.generatePlaylistMetadata(initialQuery));
+        //console.log("managePlaylist: " + util.inspect(this.playlistMetadata, false, null, true));
         let playlistVideo = new Video(url, "playlist", this.environment);
         this.addVideo(playlistVideo);
         const playlistQuery = new InfoQueryList(initialQuery, this.environment, new ProgressBar(this, playlistVideo));
@@ -156,7 +158,8 @@ class QueryManager {
         }
         downloadVideo.audioQuality = (downloadVideo.audioQuality != null) ? downloadVideo.audioQuality : "best";
         let progressBar = new ProgressBar(this, downloadVideo);
-        downloadVideo.setQuery(new DownloadQuery(downloadVideo.url, downloadVideo, this.environment, progressBar));
+        //TODO: bug is here, playlist metadata is not passed?
+        downloadVideo.setQuery(new DownloadQuery(downloadVideo.url, downloadVideo, this.environment, progressBar, this.playlistMetadata));
         downloadVideo.query.connect().then(() => {
             //Backup done call, sometimes it does not trigger automatically from within the downloadQuery.
             if(downloadVideo.error) return;
@@ -171,6 +174,7 @@ class QueryManager {
         let videosToDownload = [];
         let unifiedPlaylists = [];
         let videoMetadata = [];
+        //console.log('play meta pre dl query: ' + util.inspect(this.playlistMetadata, false, null, true));
         for(const videoObj of args.videos) {
             let video = this.getVideo(videoObj.identifier);
             video.selectedEncoding = videoObj.encoding;
@@ -190,6 +194,7 @@ class QueryManager {
                     }
                 }
                 const videoMeta = Utils.getVideoInPlaylistMetadata(video.url, null, this.playlistMetadata);
+                console.log('videoMeta 1: ' + videoMeta)
                 if(videoMeta != null) {
                     videoMetadata.push(videoMeta);
                 }
@@ -201,6 +206,7 @@ class QueryManager {
                 this.getUnifiedVideos(video, video.videos, videoObj.type === "audio", videoObj.format, videoObj.downloadSubs);
                 for(const unifiedVideo of video.videos) {
                     const videoMeta = Utils.getVideoInPlaylistMetadata(unifiedVideo.url, video.url, this.playlistMetadata);
+                    console.log('videoMeta 2: ' + videoMeta)
                     if(videoMeta != null) {
                         videoMetadata.push(videoMeta);
                     }
@@ -253,6 +259,7 @@ class QueryManager {
     downloadUnifiedPlaylist(args) {
         const playlist = this.getVideo(args.identifier);
         const videos = playlist.videos;
+        //console.log('downloadUnifiedPlaylist: ' + playlist.url + '\n' + util.inspect(this.playlistMetadata, false, null, true))
         const metadata = videos.map(vid => Utils.getVideoInPlaylistMetadata(vid.url, playlist.url, this.playlistMetadata)).filter(entry => entry != null);
         this.getUnifiedVideos(playlist, videos, args.type === "audio", args.format, playlist.downloadSubs);
         playlist.audioQuality = (playlist.audioQuality != null) ? playlist.audioQuality : "best";

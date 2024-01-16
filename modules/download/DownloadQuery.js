@@ -6,6 +6,9 @@ const console = require("console");
 
 class DownloadQuery extends Query {
     constructor(url, video, environment, progressBar, playlistMeta) {
+        if (playlistMeta == null) {
+            console.log('playlist Meta was null')
+        }
         super(environment, video.identifier);
         this.playlistMeta = playlistMeta;
         this.url = url;
@@ -27,6 +30,7 @@ class DownloadQuery extends Query {
 
         let args = [];
         let output = path.join(downloadFolderPath, Utils.resolvePlaylistPlaceholders(this.environment.settings.nameFormat, this.playlistMeta));
+        console.log('-o param: ' + output)
         const PROGRESS_TEMPLATE = '[download] %(progress._percent_str)s %(progress._speed_str)s %(progress._eta_str)s %(progress)j';
 
         if(this.video.audioOnly) {

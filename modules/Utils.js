@@ -1,5 +1,6 @@
 const Format = require("./types/Format");
 const crypto = require('crypto');
+const util = require('util');
 const ISO6392 = require('iso-639-2');
 const channelRegex = /(?:https|http):\/\/(?:[\w]+\.)?youtube\.com\/(?:c\/|channel\/|user\/)([a-zA-Z0-9-]{1,})/;
 
@@ -148,19 +149,19 @@ class Utils {
     static parseAvailableFormats(metadata) {
         let formats = [];
         let detectedFormats = [];
-        if(metadata.formats == null) {
+        if (metadata.formats == null) {
             console.error("No formats could be found.")
             return [];
         }
-        for(let dataFormat of metadata.formats) {
-            if(dataFormat.height == null) continue;
+        for (let dataFormat of metadata.formats) {
+            if (dataFormat.height == null) continue;
             let format = new Format(dataFormat.height, dataFormat.fps, null, null);
-            if(!detectedFormats.includes(format.getDisplayName())) {
-                for(const dataFormat of metadata.formats) {
+            if (!detectedFormats.includes(format.getDisplayName())) {
+                for (const dataFormat of metadata.formats) {
                     const vcodec = dataFormat.vcodec;
-                    if(dataFormat.height !== format.height || dataFormat.fps !== format.fps) continue;
-                    if(vcodec == null || vcodec === "none") continue;
-                    if(format.encodings.includes(vcodec)) continue;
+                    if (dataFormat.height !== format.height || dataFormat.fps !== format.fps) continue;
+                    if (vcodec == null || vcodec === "none") continue;
+                    if (format.encodings.includes(vcodec)) continue;
                     format.encodings.push(vcodec);
                 }
                 formats.push(format);
@@ -176,10 +177,13 @@ class Utils {
             console.error("Cannot extract URLS, no entries in data.")
             return indexes;
         }
+
+        //TODO: determine why metadata is blanking out on certain playlists
         for(const entry of query.entries) {
+            //console.log("generate metadata: " + util.inspect(entry, false, null, true))
             let url;
             if (entry.url == null) url = entry.webpage_url;
-            else url = (entry.ie_key != null && entry.ie_key === "Youtube") ? "https://youtube.com/watch?v=" + entry.url : entry.url;
+            else url = entry.url;
             if(url != null && url.length > 0) {
                 let playlist = "?";
                 if(query.title != null) {
@@ -203,32 +207,65 @@ class Utils {
     }
 
     static getVideoInPlaylistMetadata(video_url, playlist_url, metadata) {
+        //console.log('vidInPlay 1: ' + video_url + ',\n' + playlist_url + ',\n' + util.inspect(this.playlistMetadata, false, null, true))
         if(metadata == null) return null;
         for(const video of metadata) {
+            //console.log('vidInPlay 2: ' + util.inspect(video, false, null, true) + ',\n' + video.video_url + ',\n' + video_url)
             if(video.video_url === video_url) {
+                console.log('vidInPlay 3: ' + playlist_url + ',\n' + video.playlist_url)
                 if(playlist_url == null) {
                     return video;
                 } else if(playlist_url === video.playlist_url) {
+                    console.log('return video')
+                    return video;
+                } else {
+                    console.log('return video')
                     return video;
                 }
             }
         }
+        console.log('return null')
         return null;
     }
 
+    //Static resolvePlaylistPlaceholders(format, metadata) {
+    //If(metadata == null) {
+    //Console.error("No metadata was given for this playlist video.");
+    //Return format;
+    //}
+    //Let formatParsed = format;
+    //Console.log('format: ' + format)
+    //Const regex = new RegExp(/%\((\w+)\)(s?)/g);
+    //Let z;
+    //While((z=regex.exec(formatParsed)) != null) {
+    //If(z[1] != null) {
+    //If(metadata[z[1]] != null) {
+    //FormatParsed = formatParsed.replace(z[0], metadata[z[1]]);
+    //}
+    //}
+    //}
+    //Console.log('format parsed: ' + formatParsed)
+    //Return formatParsed;
+    //}
+
     static resolvePlaylistPlaceholders(format, metadata) {
         let actualMetadata = metadata;
+        //Console.log(Object.entries(actualMetadata));
         if(metadata == null) actualMetadata = {};
         let formatParsed = format;
+        console.log('format: ' + format);
         const regex = new RegExp(/%\((\w+)\)(s?)/g);
         const placeholders = format.matchAll(regex);
         for(const match of placeholders) {
+            //TODO: if match is playlist_index, dictlookup by vid query param and sub with |
             if(match == null) continue;
             if(match[0] == null || match[1] == null) continue;
+            console.log('match: ' + match);
             const placeholderValue = actualMetadata[match[1]];
             if(placeholderValue == null) continue;
             formatParsed = formatParsed.replace(match[0], placeholderValue)
         }
+        console.log('format parsed: ' + formatParsed);
         return formatParsed;
     }
 

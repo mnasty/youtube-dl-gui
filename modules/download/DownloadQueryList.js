@@ -1,6 +1,8 @@
 const DownloadQuery = require('./DownloadQuery');
 const ProgressBar = require("../types/ProgressBar");
 const Utils = require("../Utils");
+const util = require("util");
+const fs = require("fs");
 
 class DownloadQueryList {
     constructor(videos, playlistMetadata, environment, manager, progressBar) {
@@ -27,6 +29,11 @@ class DownloadQueryList {
         return await new Promise(((resolve) => {
             for(let video of this.videos) {
                 let progressBar = new ProgressBar(this.manager, video);
+                //let i = 0
+                //while (i < 2){
+                //    console.log('DownloadQueryList start(): ' +  JSON.stringify(video, null, 4));
+                //    i++
+                //}
                 let task = new DownloadQuery(video.webpage_url, video, this.environment, progressBar, Utils.getVideoInPlaylistMetadata(video.url, null, this.playlistMetadata));
                 if(video.parentID != null && !this.parentProgress.some(e => e.id === video.parentID)) {
                     const bar = new ProgressBar(this.manager, video.parentID);

@@ -16,6 +16,8 @@ class InfoQuery extends Query {
                 args.push(this.environment.settings.fileAccessRetries);
             }
             let data = await this.environment.metadataLimiter.schedule(() => this.start(this.url, args));
+            //TODO: view playlist metadata for each video
+            //console.log(data);
             return JSON.parse(data);
         } catch (e) {
             this.environment.errorHandler.checkError(e.stderr, this.identifier)

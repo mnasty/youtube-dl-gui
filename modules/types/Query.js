@@ -65,6 +65,11 @@ class Query {
         if(cb == null) {
             //Return the data after the query has completed fully.
             try {
+                //print ytdl command to console
+                //console.log('ytdl get metadata cmd: ' + command + ' ' + args.toString());
+                //verify raw data dosen't contain playlist ids
+                //console.log('raw data: ' + (await execa(command, args)).toString());
+
                 const {stdout} = await execa(command, args);
                 return stdout
             } catch(e) {
@@ -79,6 +84,9 @@ class Query {
             //Return data while the query is running (live)
             //Return "done" when the query has finished
             return await new Promise((resolve) => {
+                //print ytdl command to console
+                //console.log('ytdl download cmd: ' + command + ' ' + args.toString());
+
                 this.process = execa(command, args);
                 this.process.stdout.setEncoding('utf8');
                 this.process.stdout.on('data', (data) => {
